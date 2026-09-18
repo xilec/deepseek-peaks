@@ -50,6 +50,8 @@ lib/client.js                built browser bundle, served as a classic script
 tools/inline-sources.mjs     turns the two sources into text an import-less scope can hold
 tools/dynamic-body.mjs       builds the body of the dynamic Cordis Package (development loop)
 tools/build-package.mjs      builds lib/, the installable package
+flake.nix                    the package directory as a Nix output, plus a test-run check
+LICENSE                      MIT
 test/peaks-core.test.js      boundary table for the rule and the panel text
 test/dynamic-body.test.js    evaluates the generated body with stub builtins: slots, gating, surfaces
 test/package-bundle.test.js  loads lib/client.js the way the page does and mounts it
@@ -95,38 +97,72 @@ contract, and a profile needs two things:
 1. **The package itself, resolvable from the profile.** `lib/client.js` is read from
    `exports["./client"]` of the resolved package, and a missing bundle is a startup error.
 2. **A Host row mounting it**, because the browser roster is composed by scanning the Host
-   Loader's rows for packages declaring `dsh.client`:
-
-   ```yaml
-   - insert:
-       - id: deepseek-peaks
-         name: deepseek-peaks
-   ```
+   Loader's rows for packages declaring `dsh.client`.
 
    The row's module specifier is authoritative, so the package may be resolved by name or
-   addressed by path.
+   addressed by path — but a *path* is resolved through `realpath` and the manifest is
+   then looked up in that directory tree, which is why a path row has to point into a
+   directory that really contains `package.json` (a store path built as one directory, not
+   a symlink farm).
 
 `dsh.client` declares `platform: "web"` and nothing else: no package dependencies, and no
 `external` modules, because the bundle's only module request is `react`, which the client
 baseline seeds. `npm run build` must have run before the profile starts — `lib/` is
 committed, so an install that copies the package directory needs no build step.
 
+### With Nix
+
+The flake exposes the package directory and runs the test suite as a check:
+
+```sh
+nix build            # the package directory
+nix flake check      # packages + the test suite, run on the flake source
+```
+
+In a home configuration, add the flake as an input and insert the row. The **home** patch
+layer (`$DSH_HOME/cordis.patch.yml`) is applied after the profile layers, so it reaches the
+CLI and the `dsh-web` unit alike:
+
+```nix
+# flake.nix
+inputs.deepseek-peaks = {
+  url = "github:xilec/deepseek-peaks";
+  inputs.nixpkgs.follows = "nixpkgs";
+};
+
+# a home-manager module
+{ inputs, pkgs, ... }:
+{
+  programs.dsh.patch = [
+    {
+      insert = [
+        {
+          id = "deepseek-peaks";
+          name = "${inputs.deepseek-peaks.packages.${pkgs.stdenv.hostPlatform.system}.default}/lib/index.js";
+        }
+      ];
+    }
+  ];
+}
+```
+
 ### Notes from the first live install
 
-On this machine the package was resolved by name through the profile's shared
-`node_modules` (`~/.dsh/profiles/node_modules/deepseek-peaks` → this directory), and the
-row went into the **profile** patch layer
-(`$DSH_HOME/profiles/<profile>/cordis.patch.yml`) — not the `$DSH_HOME/cordis.patch.yml`
-layer that a home-manager-managed plugin uses to point at a built store path.
+The first install was done by hand: the package was resolved by name through the profile's
+shared `node_modules` (`~/.dsh/profiles/node_modules/deepseek-peaks` → this directory), and
+the row went into the **profile** patch layer
+(`$DSH_HOME/profiles/<profile>/cordis.patch.yml`).
 
 The row took effect only after `dsh` was restarted. The profile declares
 `patchReload: live`, but a newly inserted loader row is composed at start time, so a page
 reload on its own changes nothing — which is also the first thing to check when a freshly
 added plugin seems to have no effect.
 
+## License
+
+MIT — see `LICENSE`.
+
 ## Status
 
 The indicator runs today as a dynamic Cordis Plugin inside a session, and the installable
-package is built, covered by tests and mounted by this machine's `web` profile. The Nix
-configuration that provides the package — instead of the hand-made symlink and row that
-stand in for it right now — is the next, deliberate step.
+package is built, covered by tests and provided by this machine's Nix configuration.

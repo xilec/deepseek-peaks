@@ -57,3 +57,17 @@ had to be answered:
   prepared for publishing to a registry.
 - The wrapper is the only place that knows about the module loader. If the client contract
   changes (registration shape, baseline modules), it is the file to revisit.
+
+## Update (2026-09-18): delivery through Nix
+
+The package is now provided by `flake.nix`, which copies `package.json` and `lib/` into one
+store directory, and a home-manager module inserts the row with
+`name = "${pkg}/lib/index.js"`. A path-like row is resolved through `realpath`, and the
+manifest is looked up by walking up from the module, so the row must point into a directory
+that really contains `package.json`.
+
+This makes `home.file` unsuitable: it links each file to its own `hm_<name>` derivation in
+the store root, so the manifest is not near the module and the scan finds nothing — a
+silent failure where the host row loads happily and the browser never receives a bundle.
+A directory built by `runCommand` has no such problem, and `nix flake check` runs the test
+suite against the flake source, so a stale `lib/` fails the Nix gate as well.
