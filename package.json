@@ -1,0 +1,16 @@
+{
+  "name": "deepseek-peaks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DeepSeek peak-pricing indicator for a DSH session",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./core": "./src/peaks-core.mjs",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "node --test",
+    "build": "node tools/dynamic-body.mjs"
+  }
+}
