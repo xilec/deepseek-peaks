@@ -111,9 +111,22 @@ contract, and a profile needs two things:
 baseline seeds. `npm run build` must have run before the profile starts — `lib/` is
 committed, so an install that copies the package directory needs no build step.
 
+### Notes from the first live install
+
+On this machine the package was resolved by name through the profile's shared
+`node_modules` (`~/.dsh/profiles/node_modules/deepseek-peaks` → this directory), and the
+row went into the **profile** patch layer
+(`$DSH_HOME/profiles/<profile>/cordis.patch.yml`) — not the `$DSH_HOME/cordis.patch.yml`
+layer that a home-manager-managed plugin uses to point at a built store path.
+
+The row took effect only after `dsh` was restarted. The profile declares
+`patchReload: live`, but a newly inserted loader row is composed at start time, so a page
+reload on its own changes nothing — which is also the first thing to check when a freshly
+added plugin seems to have no effect.
+
 ## Status
 
-The indicator runs today as a dynamic Cordis Plugin inside this session, and the
-installable package is built and covered by tests. Wiring it into this machine's profile —
-including the Nix configuration that provides the package and the row above — is a
-separate, deliberate step.
+The indicator runs today as a dynamic Cordis Plugin inside a session, and the installable
+package is built, covered by tests and mounted by this machine's `web` profile. The Nix
+configuration that provides the package — instead of the hand-made symlink and row that
+stand in for it right now — is the next, deliberate step.
