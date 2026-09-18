@@ -74,3 +74,25 @@ UTC (and UTC-only window labels) when `Intl` is unavailable.
 - "provider" alone when the gate is meant — say **billing provider**.
 - "tint"/"theme colour" for the chip palette: the palette is fixed (see ADR 0002), it is
   not derived from theme tokens.
+
+## The two artifact forms
+
+The same plugin exists in two shapes, and the distinction matters whenever either is
+discussed:
+
+**Dynamic Package** — a Package defined in the current session through `cordis_define`.
+It lives only in the running process, is evaluated as a plain function body, and receives
+`React`, `styles` and `host` as builtins. This is the development and trial form.
+
+**Installable package** — the repository package (`lib/`, built from `src/`), mounted by a
+profile row and loaded by the browser through the client module system. Its browser half
+is a classic script that only registers a factory with `window.__ModuleLoader__`; that
+factory materializes into a Cordis plugin whose `apply`/`inject` the client loader calls.
+It has no runner builtins: it owns its own stylesheet and requests `react` from the module
+table. Its **Host half** exists only so the roster scan — which walks the Host Loader's
+rows — can see the package; it contributes nothing.
+
+**Client baseline** — the module table the shell seeds before any bundle runs (`react`,
+`react-dom`, `@deepseek-ai/cordis` and a few shell packages). A bundle may request those
+without declaring anything; every other module request must be declared in
+`dsh.client.external`.

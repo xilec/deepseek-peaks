@@ -44,10 +44,16 @@ There are exactly two surfaces, and exactly one of them renders at a time:
 ```
 src/peaks-core.mjs           the rule, phases, route resolution and panel model — no DOM, no React
 src/client.mjs               the Cordis plugin: slots, components, timer, CSS
-src/index.mjs                Host half of a packaged install (empty: this plugin is browser-only)
-tools/dynamic-body.mjs       inlines core + client into one dynamic Cordis Package body
+src/host.mjs                 Host half of the installable package (empty: this plugin is browser-only)
+lib/index.js                 built Host half, the file a profile row imports
+lib/client.js                built browser bundle, served as a classic script
+tools/inline-sources.mjs     turns the two sources into text an import-less scope can hold
+tools/dynamic-body.mjs       builds the body of the dynamic Cordis Package (development loop)
+tools/build-package.mjs      builds lib/, the installable package
 test/peaks-core.test.js      boundary table for the rule and the panel text
 test/dynamic-body.test.js    evaluates the generated body with stub builtins: slots, gating, surfaces
+test/package-bundle.test.js  loads lib/client.js the way the page does and mounts it
+test/support/stubs.mjs       fixtures shared by both artifact suites
 docs/adr/                    decision records
 ```
 
@@ -55,25 +61,59 @@ docs/adr/                    decision records
 UI decision and no date computation. The split exists so the interesting half can be
 tested without a browser.
 
+Two artifacts come out of that one source tree, and both are built from the same inlined
+text so they cannot drift apart:
+
+- the **dynamic Cordis Package body** — `tmp/dynamic-client-body.js`, transcribed by hand
+  into `cordis_define` for the development loop, with comments dropped to stay small;
+- the **installable package** — `lib/`, with a Host half for the profile row and a browser
+  bundle that registers itself with the page's module loader.
+
 ## Working on it
 
 ```sh
-npm test                              # runs both suites with node --test
-node tools/dynamic-body.mjs           # writes tmp/dynamic-client-body.js
+npm test                    # both artifacts plus the rule table
+npm run build               # rewrites lib/ — commit it with the source change
+npm run build:dynamic       # rewrites tmp/dynamic-client-body.js
 ```
 
-`tools/dynamic-body.mjs` strips the `import`/`export` syntax and comment-only lines from
-the two sources and appends the `createPlugin(...)` call, producing the exact body that is
-handed to a dynamic Cordis Package. `test/dynamic-body.test.js` evaluates that same text,
-so the tests exercise what actually ships rather than a paraphrase of it.
+`test/package-bundle.test.js` fails if `lib/` is stale, so a forgotten `npm run build`
+cannot ship a bundle that disagrees with its sources.
 
 `createPlugin(deps)` takes `{ styles, report }`: `styles.insert(css)` must return a
 disposer, and `report` is an optional diagnostic sink (a payload per state transition)
-that is only wired up during development — the shipped package calls `createPlugin({ styles })`.
+that is only wired up during development — the shipped artifacts call
+`createPlugin({ styles })`. The dynamic runner supplies `styles` as a builtin; the browser
+bundle supplies a `<style>` element it owns and tags with `data-plugin`, which is how the
+module loader attributes and disposes injected CSS.
+
+## Installing it
+
+The package is a browser-only Cordis plugin, so it needs both halves of the client
+contract, and a profile needs two things:
+
+1. **The package itself, resolvable from the profile.** `lib/client.js` is read from
+   `exports["./client"]` of the resolved package, and a missing bundle is a startup error.
+2. **A Host row mounting it**, because the browser roster is composed by scanning the Host
+   Loader's rows for packages declaring `dsh.client`:
+
+   ```yaml
+   - insert:
+       - id: deepseek-peaks
+         name: deepseek-peaks
+   ```
+
+   The row's module specifier is authoritative, so the package may be resolved by name or
+   addressed by path.
+
+`dsh.client` declares `platform: "web"` and nothing else: no package dependencies, and no
+`external` modules, because the bundle's only module request is `react`, which the client
+baseline seeds. `npm run build` must have run before the profile starts — `lib/` is
+committed, so an install that copies the package directory needs no build step.
 
 ## Status
 
-The indicator runs today as a dynamic Cordis Plugin inside this session. Turning it into
-an installable profile package (`~/.dsh/profiles/...` plus a `cordis.patch.yml` row) is a
-separate step: the dynamic runner supplies a `styles` builtin, while a bundled browser
-plugin has to own its stylesheet and be wrapped by the client bundler's module loader.
+The indicator runs today as a dynamic Cordis Plugin inside this session, and the
+installable package is built and covered by tests. Wiring it into this machine's profile —
+including the Nix configuration that provides the package and the row above — is a
+separate, deliberate step.

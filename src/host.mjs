@@ -1,0 +1,14 @@
+/**
+ * Host half of the installable package.
+ *
+ * The indicator is browser-only: every decision it makes is a client decision (the
+ * session's route, the browser clock, the reader's zone). This entry exists because a
+ * profile row has to mount the package for its browser half to be seen at all — the
+ * client module system builds its roster by scanning the Host Loader's rows for packages
+ * that declare `dsh.client`, and the row's module specifier is how the package's
+ * `exports["./client"]` bundle is located.
+ *
+ * It therefore contributes nothing on the Host, and deliberately so: nothing here may
+ * depend on the browser half being loaded.
+ */
+export function apply() {}

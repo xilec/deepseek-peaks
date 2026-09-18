@@ -2,62 +2,13 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import { buildDynamicBody } from '../tools/dynamic-body.mjs'
+import { FrozenDate, ReactStub, ZoneIntl, findClass, sessionProps, textOf } from './support/stubs.mjs'
 
 /**
  * Exercise the artifact that actually ships in the browser: the generated dynamic
  * Client body, evaluated with stub builtins. This covers what the core tests cannot —
  * slot registration, the two surfaces, and the route gating.
  */
-
-const FIXED_NOW = Date.parse('2026-09-18T06:54:00Z') // Friday, inside the 06:00-10:00 UTC peak
-const FIXED_ZONE = 'Europe/Moscow'
-
-/** A Date that keeps real calendar behaviour but freezes "now". */
-class FrozenDate extends Date {
-  constructor(...args) {
-    if (args.length === 0) super(FIXED_NOW)
-    else super(...args)
-  }
-
-  static now() {
-    return FIXED_NOW
-  }
-}
-
-/** An Intl that reports a fixed zone for the no-argument call the core makes. */
-const ZoneIntl = {
-  DateTimeFormat: function zoneFormat(...args) {
-    if (args.length === 0) return { resolvedOptions: () => ({ timeZone: FIXED_ZONE }) }
-    return new Intl.DateTimeFormat(...args)
-  },
-}
-
-/** Minimal React stub: element records plus the hooks the plugin actually uses. */
-const ReactStub = {
-  createElement: (type, props, ...children) => ({ type, props: props ?? {}, children }),
-  useState: (initial) => [typeof initial === 'function' ? initial() : initial, () => {}],
-  useEffect: () => {},
-}
-
-function textOf(node) {
-  if (node === null || node === undefined || node === false) return []
-  if (typeof node === 'string' || typeof node === 'number') return [String(node)]
-  if (Array.isArray(node)) return node.flatMap(textOf)
-  return textOf(node.children)
-}
-
-function findClass(node, className) {
-  if (node === null || node === undefined || typeof node !== 'object') return null
-  if (Array.isArray(node)) {
-    for (const child of node) {
-      const found = findClass(child, className)
-      if (found !== null) return found
-    }
-    return null
-  }
-  if (typeof node.props.className === 'string' && node.props.className.split(' ').includes(className)) return node
-  return findClass(node.children, className)
-}
 
 /** Evaluate the generated body and collect what `apply` registers. */
 function mount({ react = ReactStub, catalog = { status: 'ready', value: { default: { provider: 'deepseek-official', model: 'deepseek-flash' }, groups: [] }, error: null } } = {}) {
@@ -106,19 +57,6 @@ function mount({ react = ReactStub, catalog = { status: 'ready', value: { defaul
   )
   plugin.apply(ctx)
   return { plugin, registered, effects, inserted }
-}
-
-/** Props a session-scoped slot hands a chip component. */
-function sessionProps({ blank = false, provider = 'deepseek-official', model = 'deepseek-flash', projection = 'recorded' } = {}) {
-  return {
-    sessionId: 'session-1',
-    useSession: (selector) => selector({ blank, running: false, promptAttempted: false }),
-    useProjection: () => {
-      if (projection === 'recorded') return { lastUsed: { provider, model }, next: { provider, model } }
-      if (projection === 'absent') return undefined
-      return projection
-    },
-  }
 }
 
 test('the generated body is plain JavaScript and returns a plugin owning its timer', () => {

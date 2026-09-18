@@ -4,13 +4,23 @@
   "private": true,
   "description": "DeepSeek peak-pricing indicator for a DSH session",
   "type": "module",
+  "main": "lib/index.js",
   "exports": {
-    ".": "./src/index.mjs",
-    "./core": "./src/peaks-core.mjs",
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },
+  "dsh": {
+    "client": {
+      "platform": "web"
+    }
+  },
+  "files": [
+    "lib/"
+  ],
   "scripts": {
-    "test": "node --test",
-    "build": "node tools/dynamic-body.mjs"
+    "test": "node --test test/*.test.js",
+    "build": "node tools/build-package.mjs",
+    "build:dynamic": "node tools/dynamic-body.mjs"
   }
 }
