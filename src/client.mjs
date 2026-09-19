@@ -24,7 +24,13 @@ const MODEL_KEY = 'modelSelection'
  * without contributing a row to the composer stack, which would otherwise push the
  * whole blank-session hero upwards.
  */
-const HEADER_ENTRY = { name: 'conversation.session.header.actions', id: 'deepseek-peaks', order: -20 }
+
+/**
+ * The header chip sits between the agent-preset selector (`order: -10`) and the shipped
+ * header actions (`0` and up): to its left it reads as an obstacle in front of the
+ * standard controls, to its right it joins them.
+ */
+const HEADER_ENTRY = { name: 'conversation.session.header.actions', id: 'deepseek-peaks', order: -5 }
 const OVERLAY_ENTRY = { name: 'conversation.input.overlay', id: 'deepseek-peaks', order: 10 }
 
 const CSS = `
