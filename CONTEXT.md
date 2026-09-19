@@ -56,6 +56,10 @@ session that is not fresh, and the **composer surface**
 composer card) for a fresh session, where the header does not exist. The composer surface
 must not add a row to the composer stack: doing so pushes the hero block upwards.
 
+On the header surface the chip is ordered **after** the agent-preset selector and before
+the shipped header actions: the standard controls have to stay an unbroken cluster, and an
+indicator drawn in front of the preset selector reads as an obstacle to them.
+
 **Countdown** — the remaining time to the next change. Seconds appear only in the last
 hour; beyond a day the text switches to days and hours.
 

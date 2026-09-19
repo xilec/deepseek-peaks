@@ -103,7 +103,7 @@ test('the bundle mounts the same two surfaces as the dynamic body', () => {
     registered.map((entry) => entry.name),
     ['conversation.session.header.actions', 'conversation.input.overlay'],
   )
-  assert.deepEqual(registered[0].entry, { name: 'conversation.session.header.actions', id: 'deepseek-peaks', order: -20 })
+  assert.deepEqual(registered[0].entry, { name: 'conversation.session.header.actions', id: 'deepseek-peaks', order: -5 })
   assert.deepEqual(registered[1].entry, { name: 'conversation.input.overlay', id: 'deepseek-peaks', order: 10 })
 
   const [header, floating] = registered.map((entry) => entry.component)
