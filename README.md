@@ -32,10 +32,10 @@ worse than a missing one.
 There are exactly two surfaces, and exactly one of them renders at a time:
 
 - `conversation.session.header.actions` — the session header, for any session that
-  already has content. The order places the chip just after the agent-preset selector
-  (`order: -10`) and before the shipped header actions (`0` and up), so the standard
-  controls stay together and the indicator reads as part of them rather than as something
-  in front of them. The panel opens downwards.
+  already has content. The order places the chip ahead of every shipped header control —
+  before the subagent catalog (`order: -30`), the agent-preset selector (`order: -10`) and
+  the remaining header actions (`0` and up) — so the indicator is the leftmost element of
+  the header and sits left of the selected mode. The panel opens downwards.
 - `conversation.input.overlay` — the resident composer card's overlay anchor, for a fresh
   session (`blank && !running && !promptAttempted`), whose header does not exist. The
   anchor is absolutely positioned and zero-height, so the chip floats at the right edge on

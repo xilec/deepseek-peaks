@@ -69,7 +69,7 @@ test('the generated body is plain JavaScript and returns a plugin owning its tim
     ['conversation.session.header.actions', 'conversation.input.overlay'],
   )
   assert.equal(registered[0].component.name, 'PeakChip')
-  assert.deepEqual(registered[0].entry, { name: 'conversation.session.header.actions', id: 'deepseek-peaks', order: -5 })
+  assert.deepEqual(registered[0].entry, { name: 'conversation.session.header.actions', id: 'deepseek-peaks', order: -40 })
   assert.deepEqual(registered[1].entry, { name: 'conversation.input.overlay', id: 'deepseek-peaks', order: 10 })
   assert.equal(effects.length, 4, 'styles, two slot injections and the diagnostics set are owned by the fiber')
   for (const disposer of effects) assert.equal(typeof disposer, 'function')
